@@ -2,27 +2,33 @@ package day05
 
 import java.io.File
 
+typealias Stack = ArrayDeque<Char>
+
 fun main() {
 
-    val stacks = List(9) {
-        when (it) {
-            0 -> ArrayDeque(listOf('N', 'R', 'G', 'P'))
-            1 -> ArrayDeque(listOf('J', 'T', 'B', 'L', 'F', 'G', 'D', 'C'))
-            2 -> ArrayDeque(listOf('M', 'S', 'V'))
-            3 -> ArrayDeque(listOf('L', 'S', 'R', 'C', 'Z', 'P'))
-            4 -> ArrayDeque(listOf('P', 'S', 'L', 'V', 'C', 'W', 'D', 'Q'))
-            5 -> ArrayDeque(listOf('C', 'T', 'N', 'W', 'D', 'M', 'S'))
-            6 -> ArrayDeque(listOf('H', 'D', 'G', 'W', 'P'))
-            7 -> ArrayDeque(listOf('Z', 'L', 'P', 'H', 'S', 'C', 'M', 'V'))
-            8 -> ArrayDeque(listOf('R', 'P', 'F', 'L', 'W', 'G', 'Z'))
-            else -> ArrayDeque()
+    var stacks: List<Stack> = emptyList()
+    var commands: List<Command> = emptyList()
+    File("src/main/kotlin/day05/input.txt").useLines { seq ->
+        var numberOfStacks = 0
+        val iterator = seq.iterator()
+        if (iterator.hasNext()) {
+            val firstLine = iterator.next()
+            numberOfStacks = (firstLine.length + 1) / 4
+            stacks = List(numberOfStacks) { Stack() }
+            stacks.fill(firstLine.toCrates(numberOfStacks))
         }
+        while (iterator.hasNext()) {
+            val line = iterator.next()
+            if (line.isBlank()) break
+            if (line[1].isDigit()) continue
+            stacks.fill(line.toCrates(numberOfStacks))
+        }
+
+        commands = iterator.asSequence().map { Command.from(it) }.toList()
     }
+
     val stacks2 = stacks.map { ArrayDeque(it) }
 
-
-    val lines = File("src/main/kotlin/day05/input.txt").readLines()
-    val commands = lines.map { Command.from(it) }
     commands.forEach {
         val fromStack = stacks[it.fromStack]
         val toStack = stacks[it.toStack]
@@ -48,10 +54,13 @@ fun main() {
 
 data class Command(val count: Int, val fromStack: Int, val toStack: Int) {
     companion object {
-        val commandPattern = Regex("""move (\d+) from (\d+) to (\d+)""")
+        private val commandPattern = Regex("""move (\d+) from (\d+) to (\d+)""")
         fun from(string: String): Command {
-            val patternMatch = commandPattern.matchEntire(string)!!
-            return Command(patternMatch.groupValues[1].toInt(), patternMatch.groupValues[2].toInt() - 1, patternMatch.groupValues[3].toInt() - 1)
+            val matchedGroups = commandPattern.matchEntire(string)!!.groupValues
+            return Command(matchedGroups[1].toInt(), matchedGroups[2].toInt() - 1, matchedGroups[3].toInt() - 1)
         }
     }
 }
+
+fun String.toCrates(count: Int): List<Char> = (0 until count).map { this[it * 4 + 1] }
+fun List<Stack>.fill(crates: List<Char>) = crates.forEachIndexed { index, c -> if (c != ' ') this[index].addFirst(c) }
