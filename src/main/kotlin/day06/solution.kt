@@ -13,6 +13,6 @@ fun main() {
     println(messageMarkerPosition)
 }
 
-private fun String.findMarker(packetLength: Int) = this.windowed(packetLength).withIndex().first {
-    it.value.toList().size == it.value.toSet().size
-}.index + packetLength
+private fun String.findMarker(packetLength: Int) = this.windowed(packetLength).indexOfFirst {
+    packetLength == it.toSet().size
+} + packetLength
