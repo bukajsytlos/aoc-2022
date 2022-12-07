@@ -15,34 +15,20 @@ fun main() {
                 lastCommand.startsWith("$ cd ..") -> currentDirectory = currentDirectory.parent!!
                 lastCommand.startsWith("$ cd ") -> currentDirectory =
                     currentDirectory.getDirectory(lastCommand.substringAfter("$ cd "))
-
-                lastCommand.startsWith("$ ls") -> {
-                    while (iterator.hasNext()) {
-                        val output = iterator.next()
-                        if (output.startsWith("$")) {
-                            when {
-                                output == "$ cd /" -> currentDirectory = root
-                                output.startsWith("$ cd ..") -> currentDirectory = currentDirectory.parent!!
-                                output.startsWith("$ cd ") -> currentDirectory =
-                                    currentDirectory.getDirectory(output.substringAfter("$ cd "))
-                            }
-                            break
-                        }
-                        currentDirectory.add(output.toNode(currentDirectory))
-                    }
-                }
+                lastCommand.startsWith("$ ls") -> {}
+                else -> currentDirectory.add(lastCommand.toNode(currentDirectory))
             }
         }
     }
     println(getSize(root))
 
-    val freeSpace: Long = 30_000_000L - (70_000_000L - root.getFilesSize())
-    println(getNodesOfAtLeastSize(root, freeSpace).minOf { it.getFilesSize() })
+    val freeSpace: Long = 30_000_000L - (70_000_000L - root.getSize())
+    println(getNodesOfAtLeastSize(root, freeSpace).minOf { it.getSize() })
 }
 
 fun getSize(node: Node.Directory): Long {
     var totalSize = 0L
-    val filesSize = node.getFilesSize()
+    val filesSize = node.getSize()
     if (filesSize <= 100_000) {
         totalSize += filesSize
     }
@@ -52,7 +38,7 @@ fun getSize(node: Node.Directory): Long {
 
 fun getNodesOfAtLeastSize(node: Node.Directory, minSize: Long): List<Node.Directory> {
     val matchedNodes = mutableListOf<Node.Directory>()
-    val filesSize = node.getFilesSize()
+    val filesSize = node.getSize()
     if (filesSize >= minSize) {
         matchedNodes.add(node)
     }
@@ -63,27 +49,27 @@ fun getNodesOfAtLeastSize(node: Node.Directory, minSize: Long): List<Node.Direct
 }
 
 sealed class Node(val parent: Directory? = null) {
-    abstract fun getFilesSize(): Int
+    abstract fun getSize(): Int
     class Directory(
         val name: String,
         private val children: MutableList<Node> = mutableListOf(),
         parent: Directory? = null
     ) : Node(parent) {
-        override fun getFilesSize(): Int = children.sumOf { it.getFilesSize() }
+        override fun getSize(): Int = children.sumOf { it.getSize() }
         fun add(node: Node) = children.add(node)
         fun getDirectories(): List<Directory> = children.filterIsInstance(Directory::class.java).toList()
         fun getDirectory(name: String) = getDirectories().first { it.name == name }
     }
 
     class File(
-        val name: String, val size: Int,
+        val name: String, val fileSize: Int,
         parent: Directory? = null
     ) : Node(parent) {
-        override fun getFilesSize(): Int = size
+        override fun getSize(): Int = fileSize
     }
 }
 
 fun String.toNode(currentDirectory: Node.Directory): Node = when {
     startsWith("dir ") -> Node.Directory(name = substringAfter("dir "), parent = currentDirectory)
-    else -> Node.File(name = substringAfter(" "), size = substringBefore(" ").toInt(), parent = currentDirectory)
+    else -> Node.File(name = substringAfter(" "), fileSize = substringBefore(" ").toInt(), parent = currentDirectory)
 }
