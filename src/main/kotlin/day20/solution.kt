@@ -8,26 +8,26 @@ fun main() {
 
     val sourceNodes = sourceNumbers.map { Node(it) }
     sourceNodes.wire()
-    sourceNodes.mix(1)
+    sourceNodes.mix(1, 1)
 
     val zeroNode = sourceNodes.first { it.value == 0L }
-    println(zeroNode.groveCoordinates())
+    println(zeroNode.groveCoordinates(1))
 
-    val nodesWithDecryptionKey = sourceNumbers.map { Node(it * 811589153L) }
-    nodesWithDecryptionKey.wire()
-    nodesWithDecryptionKey.mix(10)
+    val decryptionKey = 811589153L
+    val nodes2 = sourceNumbers.map { Node(it) }
+    nodes2.wire()
+    nodes2.mix(decryptionKey, 10)
 
-    val zeroNodeWithDecryptionKey = nodesWithDecryptionKey.first { it.value == 0L }
-    println(zeroNodeWithDecryptionKey.groveCoordinates())
+    val zeroNode2 = nodes2.first { it.value == 0L }
+    println(zeroNode2.groveCoordinates(decryptionKey))
 }
 
-fun Node.groveCoordinates(): Long = nextNth(1000).value + nextNth(2000).value + nextNth(3000).value
+fun Node.groveCoordinates(decryptionKey: Long): Long = (nextNth(1000).value + nextNth(2000).value + nextNth(3000).value) * decryptionKey
 
-fun List<Node>.mix(times: Int) = repeat(times) {
+fun List<Node>.mix(decryptionKey: Long, times: Int) = repeat(times) {
     forEach {
-        val shift = it.value.mod(this.size - 1)
-        it.nextNth(shift)
-        it.swap(it.nextNth(shift))
+        val shift = (it.value * decryptionKey).mod(this.size - 1)
+        it.moveAfter(it.nextNth(shift))
     }
 }
 
@@ -45,7 +45,7 @@ class Node(val value: Long) {
     lateinit var previous: Node
     lateinit var next: Node
 
-    fun swap(node: Node) {
+    fun moveAfter(node: Node) {
         if (node == this) {
             return
         }
@@ -56,7 +56,6 @@ class Node(val value: Long) {
         this.next = node.next
         node.next = this
         this.previous = node
-
     }
 
     fun nextNth(n: Int): Node {
